@@ -24,7 +24,7 @@ import (
 	"github.com/prometheus/procfs/internal/util"
 )
 
-const netclassPath = "class/net"
+const NetclassPath = "class/net"
 
 // NetClassIface contains info from files in /sys/class/net/<iface>
 // for single interface (iface).
@@ -65,7 +65,7 @@ type NetClass map[string]NetClassIface
 // NetClassDevices scans /sys/class/net for devices and returns them as a list of names.
 func (fs FS) NetClassDevices() ([]string, error) {
 	var res []string
-	path := fs.sys.Path(netclassPath)
+	path := fs.sys.Path(NetclassPath)
 
 	devices, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -89,10 +89,10 @@ func (fs FS) NetClass() (NetClass, error) {
 		return nil, err
 	}
 
-	path := fs.sys.Path(netclassPath)
+	path := fs.sys.Path(NetclassPath)
 	netClass := NetClass{}
 	for _, deviceDir := range devices {
-		interfaceClass, err := netClass.parseNetClassIface(filepath.Join(path, deviceDir))
+		interfaceClass, err := ParseNetClassIface(filepath.Join(path, deviceDir))
 		if err != nil {
 			return nil, err
 		}
@@ -102,9 +102,9 @@ func (fs FS) NetClass() (NetClass, error) {
 	return netClass, nil
 }
 
-// parseNetClassIface scans predefined files in /sys/class/net/<iface>
+// ParseNetClassIface scans predefined files in /sys/class/net/<iface>
 // directory and gets their contents.
-func (nc NetClass) parseNetClassIface(devicePath string) (*NetClassIface, error) {
+func ParseNetClassIface(devicePath string) (*NetClassIface, error) {
 	interfaceClass := NetClassIface{}
 
 	files, err := ioutil.ReadDir(devicePath)
