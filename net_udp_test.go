@@ -19,94 +19,6 @@ import (
 	"testing"
 )
 
-func Test_parseNetUDPLine(t *testing.T) {
-	tests := []struct {
-		fields  []string
-		name    string
-		want    *netUDPLine
-		wantErr bool
-	}{
-		{
-			name:   "reading valid lines, no issue should happened",
-			fields: []string{"11:", "00000000:0000", "00000000:0000", "0A", "00000017:0000002A", "0:0", "0", "1000"},
-			want: &netUDPLine{
-				Sl:        11,
-				LocalAddr: net.IP{0, 0, 0, 0},
-				LocalPort: 0,
-				RemAddr:   net.IP{0, 0, 0, 0},
-				RemPort:   0,
-				St:        10,
-				TxQueue:   23,
-				RxQueue:   42,
-				UID:       1000,
-			},
-		},
-		{
-			name:    "error case - invalid line - number of fields/columns < 8",
-			fields:  []string{"1:", "00000000:0000", "00000000:0000", "07", "0:0", "0"},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "error case - parse sl - not a valid uint",
-			fields:  []string{"a:", "00000000:0000", "00000000:0000", "07", "00000000:00000001", "0:0", "0", "0"},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "error case - parse local_address - not a valid hex",
-			fields:  []string{"1:", "0000000O:0000", "00000000:0000", "07", "00000000:00000001", "0:0", "0", "0"},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "error case - parse rem_address - not a valid hex",
-			fields:  []string{"1:", "00000000:0000", "0000000O:0000", "07", "00000000:00000001", "0:0", "0", "0"},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "error case - cannot parse line - missing colon",
-			fields:  []string{"1:", "00000000:0000", "00000000:0000", "07", "0000000000000001", "0:0", "0", "0"},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "error case - parse tx_queue - not a valid hex",
-			fields:  []string{"1:", "00000000:0000", "00000000:0000", "07", "DEADCODE:00000001", "0:0", "0", "0"},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "error case - parse rx_queue - not a valid hex",
-			fields:  []string{"1:", "00000000:0000", "00000000:0000", "07", "00000000:FEEDCODE", "0:0", "0", "0"},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "error case - parse UID - not a valid uint",
-			fields:  []string{"1:", "00000000:0000", "00000000:0000", "07", "00000000:00000001", "0:0", "0", "-10"},
-			want:    nil,
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseNetUDPLine(tt.fields)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseNetUDPLine() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if tt.want == nil && got != nil {
-				t.Errorf("parseNetUDPLine() = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseNetUDPLine() = %#v, want %#v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_newNetUDP(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -117,8 +29,8 @@ func Test_newNetUDP(t *testing.T) {
 		{
 			name: "udp file found, no error should come up",
 			file: "fixtures/proc/net/udp",
-			want: []*netUDPLine{
-				&netUDPLine{
+			want: []*netIPSocketLine{
+				&netIPSocketLine{
 					Sl:        0,
 					LocalAddr: net.IP{10, 0, 0, 5},
 					LocalPort: 22,
@@ -128,8 +40,9 @@ func Test_newNetUDP(t *testing.T) {
 					TxQueue:   0,
 					RxQueue:   1,
 					UID:       0,
+					Inode:     2740,
 				},
-				&netUDPLine{
+				&netIPSocketLine{
 					Sl:        1,
 					LocalAddr: net.IP{0, 0, 0, 0},
 					LocalPort: 22,
@@ -139,8 +52,9 @@ func Test_newNetUDP(t *testing.T) {
 					TxQueue:   1,
 					RxQueue:   0,
 					UID:       0,
+					Inode:     2740,
 				},
-				&netUDPLine{
+				&netIPSocketLine{
 					Sl:        2,
 					LocalAddr: net.IP{0, 0, 0, 0},
 					LocalPort: 22,
@@ -150,6 +64,7 @@ func Test_newNetUDP(t *testing.T) {
 					TxQueue:   1,
 					RxQueue:   1,
 					UID:       0,
+					Inode:     2740,
 				},
 			},
 			wantErr: false,
@@ -157,8 +72,8 @@ func Test_newNetUDP(t *testing.T) {
 		{
 			name: "udp6 file found, no error should come up",
 			file: "fixtures/proc/net/udp6",
-			want: []*netUDPLine{
-				&netUDPLine{
+			want: []*netIPSocketLine{
+				&netIPSocketLine{
 					Sl:        1315,
 					LocalAddr: net.IP{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 					LocalPort: 5355,
@@ -168,10 +83,11 @@ func Test_newNetUDP(t *testing.T) {
 					TxQueue:   0,
 					RxQueue:   0,
 					UID:       981,
+					Inode:     21040,
 				},
-				&netUDPLine{
+				&netIPSocketLine{
 					Sl:        6073,
-					LocalAddr: net.IP{0, 0, 128, 254, 0, 0, 0, 0, 255, 173, 225, 86, 9, 102, 124, 254},
+					LocalAddr: net.IP{254, 128, 0, 0, 0, 0, 0, 0, 86, 225, 173, 255, 254, 124, 102, 9},
 					LocalPort: 51073,
 					RemAddr:   net.IP{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 					RemPort:   0,
@@ -179,6 +95,7 @@ func Test_newNetUDP(t *testing.T) {
 					TxQueue:   0,
 					RxQueue:   0,
 					UID:       1000,
+					Inode:     11337031,
 				},
 			},
 			wantErr: false,

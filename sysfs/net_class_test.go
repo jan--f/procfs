@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !windows
+// +build linux
 
 package sysfs
 
@@ -36,6 +36,27 @@ func TestNewNetClassDevices(t *testing.T) {
 	}
 	if devices[0] != "eth0" {
 		t.Errorf("Found unexpected device, want %s, have %s", "eth0", devices[0])
+	}
+}
+
+func TestNewNetClassDevicesByIface(t *testing.T) {
+	fs, err := NewFS(sysTestFixtures)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = fs.NetClassByIface("non-existent")
+	if err == nil {
+		t.Fatal("expected error, have none")
+	}
+
+	device, err := fs.NetClassByIface("eth0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if device.Name != "eth0" {
+		t.Errorf("Found unexpected device, want %s, have %s", "eth0", device.Name)
 	}
 }
 

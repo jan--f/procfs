@@ -29,6 +29,7 @@ func TestProcStat(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// pid stat int fields
 	for _, test := range []struct {
 		name string
 		want int
@@ -44,6 +45,46 @@ func TestProcStat(t *testing.T) {
 		if test.want != test.have {
 			t.Errorf("want %s %d, have %d", test.name, test.want, test.have)
 		}
+	}
+
+	// pid stat uint64 fields
+	for _, test := range []struct {
+		name string
+		want uint64
+		have uint64
+	}{
+		{name: "RSS Limit", want: 18446744073709551615, have: s.RSSLimit},
+		{name: "delayacct_blkio_ticks", want: 31, have: s.DelayAcctBlkIOTicks},
+	} {
+		if test.want != test.have {
+			t.Errorf("want %s %d, have %d", test.name, test.want, test.have)
+		}
+	}
+
+	// pid stat uint fields
+	for _, test := range []struct {
+		name string
+		want uint
+		have uint
+	}{
+		{name: "rt_priority", want: 0, have: s.RTPriority},
+		{name: "policy", want: 0, have: s.Policy},
+	} {
+		if test.want != test.have {
+			t.Errorf("want %s %d, have %d", test.name, test.want, test.have)
+		}
+	}
+}
+
+func TestProcStatIgnored(t *testing.T) {
+	p, err := getProcFixtures(t).Proc(26232)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = p.Stat()
+	if err != nil {
+		t.Errorf("want not error, have %s", err)
 	}
 }
 
